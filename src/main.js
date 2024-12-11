@@ -10,6 +10,7 @@ let selectedNode = null;
 
 const nodeRadius = 0.1;
 
+const apiUrl = 'http://localhost:8000';
 
 async function init() {
   scene = new THREE.Scene();
@@ -23,13 +24,13 @@ async function init() {
   mouse = new THREE.Vector2();
 
   try {
-    const { data: nodesData } = await axios.get('http://localhost:8000/nodes');
+    const { data: nodesData } = await axios.get(`${apiUrl}/nodes`);
 
     const limit = pLimit(10);
     const nodesWithRelations = await Promise.all(
       nodesData.map((node) =>
         limit(async () => {
-          const { data: fullNode } = await axios.get(`http://localhost:8000/node/${node.label}/${node.id}`);
+          const { data: fullNode } = await axios.get(`${apiUrl}/node/${node.label}/${node.id}`);
           return fullNode;
         })
       )
