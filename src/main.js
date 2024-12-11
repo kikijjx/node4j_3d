@@ -64,8 +64,63 @@ function createNodesAndLinks(nodesData) {
     });
   });
 
+  arrangeNodes(createdNodes);
+
   camera.position.z = 10;
 }
+
+
+function arrangeNodes(createdNodes) {
+  const maxDistance = 5;
+  const repulsionFactor = 0.1;
+  const attractionFactor = 0.05;
+
+  createdNodes.forEach((node) => {
+    let x = Math.random() * maxDistance * 2 - maxDistance;
+    let y = Math.random() * maxDistance * 2 - maxDistance;
+    let z = Math.random() * maxDistance * 2 - maxDistance;
+    node.position.set(x, y, z);
+  });
+
+  createdNodes.forEach((node, nodeId) => {
+    let displacement = new THREE.Vector3(0, 0, 0);
+
+    const numRelations = node.userData.relations ? node.userData.relations.length : 0;
+
+    createdNodes.forEach((otherNode, otherNodeId) => {
+      if (nodeId !== otherNodeId) {
+        const direction = new THREE.Vector3().subVectors(node.position, otherNode.position);
+        const distance = direction.length();
+        
+        if (distance < maxDistance) {
+          const force = repulsionFactor / Math.pow(distance, 2);
+          direction.normalize().multiplyScalar(force);
+          displacement.add(direction);
+        }
+      }
+    });
+
+    if (node.userData.relations) {
+      node.userData.relations.forEach(({ related_node }) => {
+        const relatedNode = createdNodes.get(related_node.id);
+        if (relatedNode) {
+          const direction = new THREE.Vector3().subVectors(relatedNode.position, node.position);
+          const distance = direction.length();
+
+          const attractionForce = Math.max(0, maxDistance - distance) / maxDistance * attractionFactor * numRelations;
+          direction.normalize().multiplyScalar(attractionForce);
+          displacement.add(direction);
+        }
+      });
+    }
+
+    node.position.add(displacement);
+  });
+}
+
+
+
+
 
 function createNode(nodeData) {
   const geometry = new THREE.SphereGeometry(nodeRadius);
